@@ -40,6 +40,7 @@ public class ChatRepository {
                 .subscribe(qiscusChatRooms -> {
                     data.setValue(qiscusChatRooms);
                     Log.d(TAG,"chat "+qiscusChatRooms);
+                    Log.d(TAG,"chat size "+qiscusChatRooms.size());
                 },throwable -> {
                     Log.d(TAG,"throw "+throwable.getMessage());
                 });

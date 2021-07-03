@@ -1,5 +1,6 @@
 package id.rrdev.samplechatsdk.ui.home;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -7,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import id.rrdev.samplechatsdk.databinding.ActivityHomeBinding;
+import id.rrdev.samplechatsdk.ui.contact.ContactActivity;
 
 public class HomeActivity extends AppCompatActivity implements HomeViewModel.View {
     private HomeViewModel homeViewModel;
@@ -54,7 +56,7 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
 
         //addChat
         binding.fabAdd.setOnClickListener(v -> {
-
+            startActivity(new Intent(this, ContactActivity.class));
         });
     }
 

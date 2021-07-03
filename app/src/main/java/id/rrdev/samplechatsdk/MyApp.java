@@ -1,6 +1,8 @@
 package id.rrdev.samplechatsdk;
 
 import android.app.Application;
+
+import com.qiscus.nirmana.Nirmana;
 import com.qiscus.sdk.chat.core.QiscusCore;
 
 public class MyApp extends Application {
@@ -15,7 +17,7 @@ public class MyApp extends Application {
         super.onCreate();
         instance = this;
 
-//        Nirmana.init(this);
+        Nirmana.init(this);
 
         QiscusCore.setup(this, "sdksample");
 

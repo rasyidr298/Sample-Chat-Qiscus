@@ -57,7 +57,7 @@ dependencies {
 
     //sdk chat qiscus
     implementation 'com.qiscus.sdk:chat-core:1.3.31'
-//    implementation 'com.qiscus.utils:nirmana:1.2.1'
+    implementation 'com.qiscus.utils:nirmana:1.2.1'
 //    implementation 'com.qiscus.utils:jupuk:1.1.4'
 
     //viewmodel + livedata
