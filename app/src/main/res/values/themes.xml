@@ -14,7 +14,16 @@
         <!-- Customize your theme here. -->
     </style>
 
+<!--    imagecircle-->
+    <style name="circleImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 
+    <!--    ripple effect cardView-->
+    <style name="CardView.ripple" parent="Widget.MaterialComponents.CardView">
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+    </style>
 
     <!--    custom TextInputLayout-->
     <style name="TextInputLayoutAppearance" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
