@@ -1,4 +1,4 @@
-package id.rrdev.samplechatsdk.ui.home;
+package id.rrdev.samplechatsdk.ui.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;

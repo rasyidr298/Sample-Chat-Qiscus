@@ -1,26 +1,22 @@
-package id.rrdev.samplechatsdk.ui.contact;
+package id.rrdev.samplechatsdk.ui.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;;
 import com.bumptech.glide.request.RequestOptions;
 import com.qiscus.nirmana.Nirmana;
-import com.qiscus.sdk.chat.core.data.model.QiscusComment;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.data.model.User;
-import id.rrdev.samplechatsdk.util.DateUtil;
 
 public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ViewHolder> {
 

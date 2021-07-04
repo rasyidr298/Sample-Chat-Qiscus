@@ -20,7 +20,7 @@ public class HomeViewModel extends ViewModel {
     }
 
     public LiveData<List<QiscusChatRoom>> getAllchat(){
-        return this.getAllChat = chatRepository.getChatRooms(
+        return this.getAllChat = chatRepository.getAllChat(
                 throwable -> {view.showErrorMessage(throwable.getMessage()); });
     }
 

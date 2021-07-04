@@ -12,8 +12,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SampleChatSdk">
-
-        <activity android:name=".ui.contact.ContactActivity"/>
+        <activity android:name=".ui.chatRoom.ChatRoomActivity"/>
+        <activity android:name=".ui.contact.ContactActivity" />
         <activity android:name=".ui.home.HomeActivity" />
         <activity android:name=".ui.login.LoginActivity">
             <intent-filter>

@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import id.rrdev.samplechatsdk.databinding.ActivityContactBinding;
+import id.rrdev.samplechatsdk.ui.adapter.ContactAdapter;
+import id.rrdev.samplechatsdk.ui.chatRoom.ChatRoomActivity;
 
 public class ContactActivity extends AppCompatActivity implements ContactViewModel.View {
     private ActivityContactBinding binding;
@@ -42,7 +44,11 @@ public class ContactActivity extends AppCompatActivity implements ContactViewMod
         });
 
         contactAdapter.setOnItemClickListener((view, user, position) -> {
-            Toast.makeText(this, user.getName(), Toast.LENGTH_SHORT).show();
+            contactViewModel.createRoom(user).observe(this,qiscusChatRoom -> {
+                if (qiscusChatRoom != null){
+                    startActivity(ChatRoomActivity.generateIntent(this, qiscusChatRoom));
+                }
+            });
         });
     }
 

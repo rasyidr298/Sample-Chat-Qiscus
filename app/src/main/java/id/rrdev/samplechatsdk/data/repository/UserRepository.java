@@ -17,7 +17,6 @@ import com.qiscus.sdk.chat.core.data.remote.QiscusApi;
 import java.util.List;
 
 import id.rrdev.samplechatsdk.data.model.User;
-import id.rrdev.samplechatsdk.ui.login.LoginViewModel;
 import id.rrdev.samplechatsdk.util.Action;
 import id.rrdev.samplechatsdk.util.AvatarUtil;
 import rx.Observable;
@@ -36,6 +35,7 @@ public class UserRepository {
         gson = new  GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     }
 
+    //login user
     public void loginUser(String email, String password, String name, Action<User> onSuccess, Action<Throwable> onError){
         QiscusCore.setUser(email, password)
                 .withUsername(name)
@@ -45,14 +45,15 @@ public class UserRepository {
                 .doOnNext(this::setCurrentUser)
                 .subscribeOn(Schedulers.io())
                 .subscribe(user -> {
-                    Log.d(TAG, user.toString());
+                    Log.d(TAG,"login user : "+ user.toString());
                     onSuccess.call(user);
                 },throwable -> {
-                    Log.d(TAG, throwable.getMessage());
+                    Log.d(TAG,"login user throw : "+ throwable.getMessage());
                     onError.call(throwable);
                 });
     }
 
+    //get all users
     public LiveData<List<User>> getUsers(long page, int limit, String searchUsername, Action<Throwable> onError) {
         final MutableLiveData<List<User>> data = new MutableLiveData<>();
 
@@ -65,11 +66,11 @@ public class UserRepository {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(users -> {
-                    Log.d(TAG,"users "+users);
-                    Log.d(TAG,"users size "+users.size());
+                    Log.d(TAG,"get users : "+users);
+                    Log.d(TAG,"get users size : "+users.size());
                     data.setValue(users);
                 }, throwable -> {
-                    Log.d(TAG,"throw "+throwable.getMessage());
+                    Log.d(TAG,"throw get users : "+throwable.getMessage());
                     onError.call(throwable);
                 });
 

@@ -7,7 +7,15 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.qiscus.nirmana.Nirmana;
+import com.qiscus.sdk.chat.core.QiscusCore;
+
+import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.databinding.ActivityHomeBinding;
+import id.rrdev.samplechatsdk.ui.adapter.HomeAdapter;
+import id.rrdev.samplechatsdk.ui.chatRoom.ChatRoomActivity;
 import id.rrdev.samplechatsdk.ui.contact.ContactActivity;
 
 public class HomeActivity extends AppCompatActivity implements HomeViewModel.View {
@@ -34,6 +42,13 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
     }
 
     private void setupView(){
+        Nirmana.getInstance().get()
+                .setDefaultRequestOptions(new RequestOptions()
+                        .placeholder(R.drawable.ic_qiscus_avatar)
+                        .error(R.drawable.ic_qiscus_avatar)
+                        .dontAnimate())
+                .load(QiscusCore.getQiscusAccount().getAvatar())
+                .into(binding.ivAvatar);
 
         //observe chatRoom
         binding.recyclerview.setAdapter(homeAdapter);
@@ -45,7 +60,7 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
 
         //onClick
         homeAdapter.setOnItemClickListener((view, qiscusChatRoom, position) -> {
-            Toast.makeText(this, qiscusChatRoom.getName(), Toast.LENGTH_SHORT).show();
+            startActivity(ChatRoomActivity.generateIntent(this, qiscusChatRoom));
         });
 
         //longClick

@@ -2,6 +2,7 @@ package id.rrdev.samplechatsdk;
 
 import android.app.Application;
 
+import com.qiscus.jupuk.Jupuk;
 import com.qiscus.nirmana.Nirmana;
 import com.qiscus.sdk.chat.core.QiscusCore;
 
@@ -21,7 +22,7 @@ public class MyApp extends Application {
 
         QiscusCore.setup(this, "sdksample");
 
-//        Jupuk.init(this);
+        Jupuk.init(this);
 
     }
 }
