@@ -2,26 +2,31 @@ package id.rrdev.samplechatsdk.ui.home;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.qiscus.nirmana.Nirmana;
 import com.qiscus.sdk.chat.core.QiscusCore;
+import com.qiscus.sdk.chat.core.data.model.QiscusChatRoom;
+
+import java.util.List;
 
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.databinding.ActivityHomeBinding;
-import id.rrdev.samplechatsdk.ui.adapter.HomeAdapter;
+import id.rrdev.samplechatsdk.ui.adapter.ChatRoomAdapter;
 import id.rrdev.samplechatsdk.ui.chatRoom.ChatRoomActivity;
 import id.rrdev.samplechatsdk.ui.contact.ContactActivity;
+import id.rrdev.samplechatsdk.ui.login.LoginActivity;
 
-public class HomeActivity extends AppCompatActivity implements HomeViewModel.View {
+public class HomeActivity extends AppCompatActivity implements HomeViewModel.View, View.OnClickListener {
     private HomeViewModel homeViewModel;
     private ActivityHomeBinding binding;
-    private HomeAdapter homeAdapter;
+    private ChatRoomAdapter chatRoomAdapter;
+    private List<QiscusChatRoom> chatRoom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +39,15 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
     }
 
     private void init(){
-        homeViewModel = new HomeViewModel(this);
+        homeViewModel = new HomeViewModel(this, this);
 
         //init recycler
-        homeAdapter = new HomeAdapter();
+        chatRoomAdapter = new ChatRoomAdapter();
         binding.recyclerview.setLayoutManager(new LinearLayoutManager(this));
+
+        //init click
+        binding.fabAdd.setOnClickListener(this);
+        binding.llLogout.setOnClickListener(this);
     }
 
     private void setupView(){
@@ -50,33 +59,44 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
                 .load(QiscusCore.getQiscusAccount().getAvatar())
                 .into(binding.ivAvatar);
 
-        //observe chatRoom
-        binding.recyclerview.setAdapter(homeAdapter);
-        homeViewModel.getAllchat().observe(this, qiscusChatRooms -> {
-            if (qiscusChatRooms != null) {
-                homeAdapter.submitList(qiscusChatRooms);
-            }
-        });
 
-        //onClick
-        homeAdapter.setOnItemClickListener((view, qiscusChatRoom, position) -> {
+        //onClick adapter
+        chatRoomAdapter.setOnItemClickListener((view, qiscusChatRoom, position) -> {
             startActivity(ChatRoomActivity.generateIntent(this, qiscusChatRoom));
         });
+    }
 
-        //longClick
-        homeAdapter.setOnItemLongClickListener((view, qiscusChatRoom, position) -> {
-            Toast.makeText(this, qiscusChatRoom.getName(), Toast.LENGTH_SHORT).show();
-            return true;
-        });
-
-        //addChat
-        binding.fabAdd.setOnClickListener(v -> {
-            startActivity(new Intent(this, ContactActivity.class));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //observe chatRoom
+        binding.recyclerview.setAdapter(chatRoomAdapter);
+        homeViewModel.getAllchat().observe(this, qiscusChatRooms -> {
+            if (qiscusChatRooms != null) {
+                this.chatRoom = qiscusChatRooms;
+                chatRoomAdapter.submitList(qiscusChatRooms);
+            }
         });
     }
 
     @Override
     public void showErrorMessage(String errorMessage) {
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.llLogout :
+                homeViewModel.logout();
+                Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+                break;
+            case R.id.fabAdd :
+                startActivity(new Intent(this, ContactActivity.class));
+                break;
+        }
     }
 }

@@ -20,15 +20,15 @@ import java.util.List;
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.util.DateUtil;
 
-public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
+public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHolder> {
 
-    private List<QiscusChatRoom> noteList = new ArrayList<>();
+    private List<QiscusChatRoom> chatRooms = new ArrayList<>();
     private Callback.ItemClick itemClick;
     private Callback.ItemLongClick itemLongClick;
 
     public void submitList(List<QiscusChatRoom> list){
-        noteList.clear();
-        noteList.addAll(list);
+        chatRooms.clear();
+        chatRooms.addAll(list);
         notifyDataSetChanged();
     }
 
@@ -49,20 +49,20 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(noteList.get(position));
+        holder.bind(chatRooms.get(position));
 
         if (itemClick != null){
-            holder.itemView.setOnClickListener(v -> itemClick.onItemClick(v, noteList.get(position), position));
+            holder.itemView.setOnClickListener(v -> itemClick.onItemClick(v, chatRooms.get(position), position));
         }
 
         if (itemLongClick != null){
-            holder.itemView.setOnLongClickListener(v -> itemLongClick.onItemLongClick(v, noteList.get(position), position));
+            holder.itemView.setOnLongClickListener(v -> itemLongClick.onItemLongClick(v, chatRooms.get(position), position));
         }
     }
 
     @Override
     public int getItemCount() {
-        return noteList.size();
+        return chatRooms.size();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {

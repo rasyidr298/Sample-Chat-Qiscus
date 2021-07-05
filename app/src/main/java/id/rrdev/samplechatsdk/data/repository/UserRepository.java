@@ -78,6 +78,12 @@ public class UserRepository {
 
     }
 
+    //logout user
+    public void logout() {
+        QiscusCore.clearUser();
+        sharedPreferences.edit().clear().apply();
+    }
+
     private User getCurrentUser() {
         return gson.fromJson(sharedPreferences.getString("current_user", ""), User.class);
     }
