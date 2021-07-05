@@ -19,6 +19,7 @@ import java.util.List;
 import id.rrdev.samplechatsdk.data.model.User;
 import id.rrdev.samplechatsdk.util.Action;
 import id.rrdev.samplechatsdk.util.AvatarUtil;
+import rx.Emitter;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -82,6 +83,31 @@ public class UserRepository {
     public void logout() {
         QiscusCore.clearUser();
         sharedPreferences.edit().clear().apply();
+    }
+
+    //get current user
+    public void getCurrentUser(Action<User> onSuccess){
+        getCurrentUserObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(user -> {
+                    onSuccess.call(user);
+                    Log.d(TAG,"current user : "+user.toString());
+                }, throwable -> {
+                    Log.d(TAG,"current user throw : "+throwable.getMessage());
+                });
+    }
+
+    private Observable<User> getCurrentUserObservable() {
+        return Observable.create(subscriber -> {
+            try {
+                subscriber.onNext(getCurrentUser());
+            } catch (Exception e) {
+                subscriber.onError(e);
+            } finally {
+                subscriber.onCompleted();
+            }
+        }, Emitter.BackpressureMode.BUFFER);
     }
 
     private User getCurrentUser() {

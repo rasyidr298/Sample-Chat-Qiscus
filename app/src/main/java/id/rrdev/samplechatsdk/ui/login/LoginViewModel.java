@@ -1,7 +1,6 @@
 package id.rrdev.samplechatsdk.ui.login;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.lifecycle.ViewModel;
 
@@ -25,6 +24,12 @@ public class LoginViewModel extends ViewModel {
                 throwable -> {
                     view.onFailure(throwable.getMessage());
                 });
+    }
+
+    public void sessionLogin(){
+        userRepository.getCurrentUser(
+                user -> {if (user != null){ view.onSucces();}}
+        );
     }
 
     public interface View{

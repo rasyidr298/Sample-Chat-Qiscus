@@ -28,6 +28,7 @@ public class LoginActivity extends AppCompatActivity implements LoginViewModel.V
 
     private void init(){
         loginViewModel =  new LoginViewModel(this,this);
+        loginViewModel.sessionLogin();
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Please wait!");
     }
