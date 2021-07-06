@@ -6,6 +6,8 @@ import com.qiscus.jupuk.Jupuk;
 import com.qiscus.nirmana.Nirmana;
 import com.qiscus.sdk.chat.core.QiscusCore;
 
+import id.rrdev.samplechatsdk.util.PushNotificationUtil;
+
 public class MyApp extends Application {
     private static MyApp instance;
 
@@ -21,6 +23,11 @@ public class MyApp extends Application {
         Nirmana.init(this);
 
         QiscusCore.setup(this, "sdksample");
+
+        QiscusCore.getChatConfig()
+                .enableDebugMode(true)
+                .setNotificationListener(PushNotificationUtil::showNotification)
+                .setEnableFcmPushNotification(true);
 
         Jupuk.init(this);
 

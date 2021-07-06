@@ -12,6 +12,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SampleChatSdk">
+
         <activity android:name=".ui.chatRoom.ChatRoomActivity"/>
         <activity android:name=".ui.contact.ContactActivity" />
         <activity android:name=".ui.home.HomeActivity" />
@@ -22,6 +23,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".service.NotificationClickReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.qiscus.OPEN_COMMENT_PN" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
