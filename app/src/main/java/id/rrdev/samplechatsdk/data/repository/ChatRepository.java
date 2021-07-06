@@ -4,6 +4,7 @@ import android.util.Log;
 
 import androidx.core.util.Pair;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.qiscus.sdk.chat.core.QiscusCore;
@@ -13,12 +14,16 @@ import com.qiscus.sdk.chat.core.data.remote.QiscusApi;
 
 import org.json.JSONException;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import id.rrdev.samplechatsdk.data.model.User;
 import id.rrdev.samplechatsdk.util.Action;
 import retrofit2.HttpException;
 import rx.Observable;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
@@ -26,6 +31,11 @@ import rx.schedulers.Schedulers;
 public class ChatRepository{
     private static final String TAG = ChatRepository.class.getSimpleName();
     private final Func2<QiscusComment, QiscusComment, Integer> commentComparator = (lhs, rhs) -> rhs.getTime().compareTo(lhs.getTime());
+//    private final Map<QiscusComment, Subscription> pendingTask;
+//
+//    public ChatRepository(){
+//        pendingTask = new HashMap<>();
+//    }
 
     //get all chat
     public LiveData<List<QiscusChatRoom>> getAllChat(Action<Throwable> onError) {
@@ -86,7 +96,7 @@ public class ChatRepository{
     public LiveData<QiscusComment> sendComment(QiscusComment qiscusComment, Action<Throwable> onError) {
         final MutableLiveData<QiscusComment> data = new MutableLiveData<>();
 
-        QiscusApi.getInstance().sendMessage(qiscusComment)
+        Subscription subscription = QiscusApi.getInstance().sendMessage(qiscusComment)
                 .doOnSubscribe(() -> QiscusCore.getDataStore().addOrUpdate(qiscusComment))
                 .doOnNext(this::commentSuccess)
                 .doOnError(throwable -> commentFail(throwable, qiscusComment))
@@ -100,11 +110,13 @@ public class ChatRepository{
                     Log.d(TAG,"create comment throw : "+throwable.getMessage());
                     onError.call(throwable);
                 });
+
+//        pendingTask.put(qiscusComment, subscription);
         return data;
     }
 
     //get chat user
-    public LiveData<List<QiscusComment>> loadComments(int count, QiscusChatRoom room, Action<Throwable> onError) {
+    public LiveData<List<QiscusComment>> loadComments(int count, QiscusChatRoom room, Action<QiscusChatRoom>roomAction, Action<Throwable> onError) {
         final MutableLiveData<List<QiscusComment>> data = new MutableLiveData<>();
 
         Observable.merge(getInitRoomData(room), getLocalComments(count, room)
@@ -118,6 +130,7 @@ public class ChatRepository{
                     Log.d(TAG,"chat user second : "+roomData.second.toString());
                     Log.d(TAG,"chat user second size : "+roomData.second.size());
                     data.setValue(roomData.second);
+                    roomAction.call(roomData.first);
                 }, throwable -> {
                     onError.call(throwable);
                     Log.d(TAG,"chat user throw : "+throwable.getMessage());
@@ -126,7 +139,8 @@ public class ChatRepository{
         return data;
     }
 
-    private void commentSuccess(QiscusComment qiscusComment) {
+    public void commentSuccess(QiscusComment qiscusComment) {
+//        pendingTask.remove(qiscusComment);
         qiscusComment.setState(QiscusComment.STATE_ON_QISCUS);
         QiscusComment savedQiscusComment = QiscusCore.getDataStore().getComment(qiscusComment.getUniqueId());
         if (savedQiscusComment != null && savedQiscusComment.getState() > qiscusComment.getState()) {
@@ -136,6 +150,7 @@ public class ChatRepository{
     }
 
     private void commentFail(Throwable throwable, QiscusComment qiscusComment) {
+//        pendingTask.remove(qiscusComment);
         if (!QiscusCore.getDataStore().isContains(qiscusComment)) {
             return;
         }
@@ -163,6 +178,15 @@ public class ChatRepository{
 
     private Observable<Pair<QiscusChatRoom, List<QiscusComment>>> getInitRoomData(QiscusChatRoom room) {
         return QiscusApi.getInstance().getChatRoomWithMessages(room.getId())
+                .doOnNext(roomData -> {
+                    Collections.sort(roomData.second, (lhs, rhs) -> rhs.getTime().compareTo(lhs.getTime()));
+                    QiscusCore.getDataStore().addOrUpdate(roomData.first);
+                })
+                .doOnNext(roomData -> {
+                    for (QiscusComment qiscusComment : roomData.second) {
+                        QiscusCore.getDataStore().addOrUpdate(qiscusComment);
+                    }
+                })
                 .subscribeOn(Schedulers.io())
                 .onErrorReturn(throwable -> null);
     }

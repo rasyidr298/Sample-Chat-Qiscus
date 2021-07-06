@@ -31,6 +31,8 @@ public class CommentsAdapter extends SortedRecyclerViewAdapter<QiscusComment, Co
     private static final int TYPE_MY_TEXT = 1;
     private static final int TYPE_OPPONENT_TEXT = 2;
     private Context context;
+    private long lastDeliveredCommentId;
+    private long lastReadCommentId;
 
     public CommentsAdapter(Context context) {
         this.context = context;
@@ -114,6 +116,49 @@ public class CommentsAdapter extends SortedRecyclerViewAdapter<QiscusComment, Co
         } else {
             holder.setNeedToShowDate(!QiscusDateUtil.isDateEqualIgnoreTime(getData().get(position).getTime(),
                     getData().get(position + 1).getTime()));
+        }
+    }
+
+    public QiscusComment getLatestSentComment() {
+        int size = getData().size();
+        for (int i = 0; i < size; i++) {
+            QiscusComment comment = getData().get(i);
+            if (comment.getState() >= QiscusComment.STATE_ON_QISCUS) {
+                return comment;
+            }
+        }
+        return null;
+    }
+
+    public void updateLastDeliveredComment(long lastDeliveredCommentId) {
+        this.lastDeliveredCommentId = lastDeliveredCommentId;
+        updateCommentState();
+        notifyDataSetChanged();
+    }
+
+    public void updateLastReadComment(long lastReadCommentId) {
+        this.lastReadCommentId = lastReadCommentId;
+        this.lastDeliveredCommentId = lastReadCommentId;
+        updateCommentState();
+        notifyDataSetChanged();
+    }
+
+    private void updateCommentState() {
+        int size = getData().size();
+        for (int i = 0; i < size; i++) {
+            if (getData().get(i).getState() > QiscusComment.STATE_SENDING) {
+                if (getData().get(i).getId() <= lastReadCommentId) {
+                    if (getData().get(i).getState() == QiscusComment.STATE_READ) {
+                        break;
+                    }
+                    getData().get(i).setState(QiscusComment.STATE_READ);
+                } else if (getData().get(i).getId() <= lastDeliveredCommentId) {
+                    if (getData().get(i).getState() == QiscusComment.STATE_DELIVERED) {
+                        break;
+                    }
+                    getData().get(i).setState(QiscusComment.STATE_DELIVERED);
+                }
+            }
         }
     }
 

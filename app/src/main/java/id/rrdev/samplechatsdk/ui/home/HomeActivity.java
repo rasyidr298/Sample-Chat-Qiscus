@@ -12,17 +12,22 @@ import com.bumptech.glide.request.RequestOptions;
 import com.qiscus.nirmana.Nirmana;
 import com.qiscus.sdk.chat.core.QiscusCore;
 import com.qiscus.sdk.chat.core.data.model.QiscusChatRoom;
+import com.qiscus.sdk.chat.core.event.QiscusCommentReceivedEvent;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.List;
 
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.databinding.ActivityHomeBinding;
 import id.rrdev.samplechatsdk.ui.adapter.ChatRoomAdapter;
+import id.rrdev.samplechatsdk.ui.adapter.OnItemClickListener;
 import id.rrdev.samplechatsdk.ui.chatRoom.ChatRoomActivity;
 import id.rrdev.samplechatsdk.ui.contact.ContactActivity;
 import id.rrdev.samplechatsdk.ui.login.LoginActivity;
 
-public class HomeActivity extends AppCompatActivity implements HomeViewModel.View, View.OnClickListener {
+public class HomeActivity extends AppCompatActivity implements HomeViewModel.View, View.OnClickListener, OnItemClickListener {
     private HomeViewModel homeViewModel;
     private ActivityHomeBinding binding;
     private ChatRoomAdapter chatRoomAdapter;
@@ -42,10 +47,12 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
         homeViewModel = new HomeViewModel(this, this);
 
         //init recycler
-        chatRoomAdapter = new ChatRoomAdapter();
+        chatRoomAdapter = new ChatRoomAdapter(this);
         binding.recyclerview.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerview.setAdapter(chatRoomAdapter);
 
         //init click
+        chatRoomAdapter.setOnItemClickListener(this);
         binding.fabAdd.setOnClickListener(this);
         binding.llLogout.setOnClickListener(this);
     }
@@ -58,25 +65,35 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
                         .dontAnimate())
                 .load(QiscusCore.getQiscusAccount().getAvatar())
                 .into(binding.ivAvatar);
+    }
 
-
-        //onClick adapter
-        chatRoomAdapter.setOnItemClickListener((view, qiscusChatRoom, position) -> {
-            startActivity(ChatRoomActivity.generateIntent(this, qiscusChatRoom));
+    private void observeRoomChat(){
+        homeViewModel.getAllchat().observe(this, qiscusChatRooms -> {
+            if (qiscusChatRooms != null) {
+                this.chatRoom = qiscusChatRooms;
+                chatRoomAdapter.addOrUpdate(qiscusChatRooms);
+            }
         });
+    }
+
+    @Subscribe
+    public void onCommentReceivedEvent(QiscusCommentReceivedEvent event) {
+        //observe chatRoom
+        observeRoomChat();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        EventBus.getDefault().register(this);
         //observe chatRoom
-        binding.recyclerview.setAdapter(chatRoomAdapter);
-        homeViewModel.getAllchat().observe(this, qiscusChatRooms -> {
-            if (qiscusChatRooms != null) {
-                this.chatRoom = qiscusChatRooms;
-                chatRoomAdapter.submitList(qiscusChatRooms);
-            }
-        });
+        observeRoomChat();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        EventBus.getDefault().unregister(this);
     }
 
     @Override
@@ -98,5 +115,10 @@ public class HomeActivity extends AppCompatActivity implements HomeViewModel.Vie
                 startActivity(new Intent(this, ContactActivity.class));
                 break;
         }
+    }
+
+    @Override
+    public void onItemClick(int position) {
+            startActivity(ChatRoomActivity.generateIntent(this, chatRoom.get(position)));
     }
 }

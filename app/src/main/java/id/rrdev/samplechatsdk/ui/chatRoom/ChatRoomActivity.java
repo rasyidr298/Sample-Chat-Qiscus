@@ -3,7 +3,9 @@ package id.rrdev.samplechatsdk.ui.chatRoom;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -12,7 +14,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
+import com.qiscus.sdk.chat.core.data.local.QiscusCacheManager;
 import com.qiscus.sdk.chat.core.data.model.QiscusChatRoom;
+import com.qiscus.sdk.chat.core.data.model.QiscusComment;
+import com.qiscus.sdk.chat.core.data.remote.QiscusPusherApi;
+import com.qiscus.sdk.chat.core.event.QiscusUserStatusEvent;
+import com.qiscus.sdk.chat.core.util.QiscusDateUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.databinding.ActivityRoomChatBinding;
@@ -53,6 +63,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setReverseLayout(true);
         binding.recyclerView.setLayoutManager(layoutManager);
+        binding.recyclerView.setAdapter(commentsAdapter);
     }
 
     private void setupView(){
@@ -65,19 +76,109 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
 
         Glide.with(this).load(chatRoom.getAvatarUrl()).into(binding.ivAvatar);
         binding.tvNama.setText(chatRoom.getName());
+    }
 
+    private void notifyLatestRead() {
+        QiscusComment comment = commentsAdapter.getLatestSentComment();
+        if (comment != null) {
+            QiscusPusherApi.getInstance()
+                    .markAsRead(chatRoom.getId(), comment.getId());
+        }
+    }
+
+    private void checkTyping(){
+        binding.etFieldMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                notifyServerTyping(true);
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+    }
+
+    private void notifyServerTyping(boolean typing) {
+        QiscusPusherApi.getInstance().publishTyping(chatRoom.getId(), typing);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        EventBus.getDefault().register(this);
         //get comment
-        binding.recyclerView.setAdapter(commentsAdapter);
         chatRoomViewModel.getChatRoom(100, chatRoom).observe(this, qiscusComments -> {
             if (qiscusComments != null){
                 commentsAdapter.addOrUpdate(qiscusComments);
+                notifyLatestRead();
             }
         });
+        QiscusCacheManager.getInstance().setLastChatActivity(true, chatRoom.getId());
+        checkTyping();
+        Runnable stopTypingNotifyTask = () -> {
+            notifyServerTyping(false);
+        };
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        QiscusCacheManager.getInstance().setLastChatActivity(false, chatRoom.getId());
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        notifyLatestRead();
+        chatRoomViewModel.detachView();
     }
 
     @Override
     public void showErrorMessage(String errorMessage) {
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onFailedSendComment(QiscusComment qiscusComment) {
+        commentsAdapter.addOrUpdate(qiscusComment);
+    }
+
+    @Subscribe
+    public void onUserStatusChanged(QiscusUserStatusEvent event) {
+        String last = QiscusDateUtil.getRelativeTimeDiff(event.getLastActive());
+        Log.w("test","onUserStatusChanged: "+ event.isOnline());
+        binding.subtitle.setText(event.isOnline() ? "Online" : "Last seen " + last);
+    }
+
+    @Override
+    public void onUserTyping(String user, boolean typing) {
+        binding.subtitle.setText(typing ? "Typing..." : "Online");
+    }
+
+    @Override
+    public void updateLastDeliveredComment(long lastDeliveredCommentId) {
+        commentsAdapter.updateLastDeliveredComment(lastDeliveredCommentId);
+    }
+
+    @Override
+    public void updateLastReadComment(long lastReadCommentId) {
+        commentsAdapter.updateLastReadComment(lastReadCommentId);
+    }
+
+    @Override
+    public void onNewComment(QiscusComment comment) {
+        commentsAdapter.addOrUpdate(comment);
+        if (((LinearLayoutManager) binding.recyclerView.getLayoutManager()).findFirstVisibleItemPosition() <= 2) {
+            binding.recyclerView.smoothScrollToPosition(0);
+        }
     }
 
     @Override
@@ -91,9 +192,9 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
                     chatRoomViewModel.sendComment(binding.etFieldMessage.getText().toString()).observe(this, qiscusComment -> {
                         if (qiscusComment != null){
                             commentsAdapter.addOrUpdate(qiscusComment);
-                            binding.etFieldMessage.getText().clear();
                         }
                     });
+                    binding.etFieldMessage.getText().clear();
                 }
                 break;
 
