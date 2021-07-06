@@ -1,5 +1,6 @@
 package id.rrdev.samplechatsdk.ui.adapter;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,63 +15,64 @@ import com.bumptech.glide.Glide;
 import com.qiscus.sdk.chat.core.data.model.QiscusChatRoom;
 import com.qiscus.sdk.chat.core.data.model.QiscusComment;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import id.rrdev.samplechatsdk.R;
 import id.rrdev.samplechatsdk.util.DateUtil;
 
-public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHolder> {
+public class ChatRoomAdapter extends SortedRecyclerViewAdapter<QiscusChatRoom, ChatRoomAdapter.VH> {
+    private Context context;
+    private OnItemClickListener onItemClickListener;
 
-    private List<QiscusChatRoom> chatRooms = new ArrayList<>();
-    private Callback.ItemClick itemClick;
-    private Callback.ItemLongClick itemLongClick;
+    public ChatRoomAdapter(Context context) {
+        this.context = context;
+    }
 
-    public void submitList(List<QiscusChatRoom> list){
-        chatRooms.clear();
-        chatRooms.addAll(list);
+    public void addOrUpdate(List<QiscusChatRoom> chatRooms) {
+        for (QiscusChatRoom chatRoom : chatRooms) {
+            int index = findPosition(chatRoom);
+            if (index == -1) {
+                getData().add(chatRoom);
+            } else {
+                getData().updateItemAt(index, chatRoom);
+            }
+        }
         notifyDataSetChanged();
     }
 
-    public void setOnItemClickListener(Callback.ItemClick callback){
-        itemClick = callback;
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.onItemClickListener = onItemClickListener;
     }
 
-    public void setOnItemLongClickListener(Callback.ItemLongClick callback){
-        itemLongClick = callback;
+    @Override
+    protected Class<QiscusChatRoom> getItemClass() {
+        return QiscusChatRoom.class;
+    }
+
+    @Override
+    protected int compare(QiscusChatRoom item1, QiscusChatRoom item2) {
+        return item2.getLastComment().getTime().compareTo(item1.getLastComment().getTime());
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_room, parent, false);
-        return new ViewHolder(itemView);
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_room, parent, false);
+        return new VH(view, onItemClickListener);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(chatRooms.get(position));
-
-        if (itemClick != null){
-            holder.itemView.setOnClickListener(v -> itemClick.onItemClick(v, chatRooms.get(position), position));
-        }
-
-        if (itemLongClick != null){
-            holder.itemView.setOnLongClickListener(v -> itemLongClick.onItemLongClick(v, chatRooms.get(position), position));
-        }
+    public void onBindViewHolder(@NonNull VH holder, int position) {
+        holder.bind(getData().get(position));
     }
 
-    @Override
-    public int getItemCount() {
-        return chatRooms.size();
-    }
-
-    class ViewHolder extends RecyclerView.ViewHolder {
+    public static class VH extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ImageView avatar;
         private TextView name, lastMessage, tv_unread_count, tv_time;
         private FrameLayout layout_unread_count;
+        private OnItemClickListener onItemClickListener;
 
-        public ViewHolder(@NonNull View itemView) {
+        public VH(@NonNull View itemView, OnItemClickListener onItemClickListener) {
             super(itemView);
             avatar = itemView.findViewById(R.id.avatar);
             name = itemView.findViewById(R.id.name);
@@ -78,6 +80,10 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
             tv_unread_count = itemView.findViewById(R.id.tv_unread_count);
             tv_time = itemView.findViewById(R.id.tv_time);
             layout_unread_count = itemView.findViewById(R.id.layout_unread_count);
+
+            this.onItemClickListener = onItemClickListener;
+
+            itemView.setOnClickListener(this);
         }
 
         public void bind(QiscusChatRoom chatRoom){
@@ -113,14 +119,12 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
                 layout_unread_count.setVisibility(View.VISIBLE);
             }
         }
-    }
 
-    interface Callback {
-        interface ItemClick {
-            void onItemClick(View view, QiscusChatRoom qiscusChatRoom, int position);
-        }
-        interface ItemLongClick {
-            Boolean onItemLongClick(View view, QiscusChatRoom qiscusChatRoom, int position);
+        @Override
+        public void onClick(View v) {
+            if (onItemClickListener != null) {
+                onItemClickListener.onItemClick(getAdapterPosition());
+            }
         }
     }
 }

@@ -35,6 +35,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
     private ChatRoomViewModel chatRoomViewModel;
     private QiscusChatRoom chatRoom;
     private CommentsAdapter commentsAdapter;
+    private String opponentEmail;
 
     public static Intent generateIntent(Context context, QiscusChatRoom chatRoom) {
         Intent intent = new Intent(context, ChatRoomActivity.class);
@@ -67,13 +68,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
     }
 
     private void setupView(){
-        if (chatRoom != null) {
-            Log.d(TAG,"chat room user "+chatRoom.toString());
-        }else{
-            finish();
-            return;
-        }
-
         Glide.with(this).load(chatRoom.getAvatarUrl()).into(binding.ivAvatar);
         binding.tvNama.setText(chatRoom.getName());
     }
@@ -81,8 +75,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
     private void notifyLatestRead() {
         QiscusComment comment = commentsAdapter.getLatestSentComment();
         if (comment != null) {
-            QiscusPusherApi.getInstance()
-                    .markAsRead(chatRoom.getId(), comment.getId());
+            QiscusPusherApi.getInstance().markAsRead(chatRoom.getId(), comment.getId());
         }
     }
 
@@ -95,18 +88,35 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-
             }
         });
     }
 
+    private void listenUser() {
+        if (opponentEmail != null) {
+            QiscusPusherApi.getInstance().subscribeUserOnlinePresence(opponentEmail);
+        }
+    }
+
+    private void unlistenUser() {
+        if (opponentEmail != null) {
+            QiscusPusherApi.getInstance().unsubscribeUserOnlinePresence(opponentEmail);
+        }
+    }
+
     private void notifyServerTyping(boolean typing) {
         QiscusPusherApi.getInstance().publishTyping(chatRoom.getId(), typing);
+    }
+
+    @Subscribe
+    public void onUserStatusChanged(QiscusUserStatusEvent event) {
+        String last = QiscusDateUtil.getRelativeTimeDiff(event.getLastActive());
+        Log.w("test","onUserStatusChanged: "+ event.isOnline());
+        binding.subtitle.setText(event.isOnline() ? "Online" : "Last seen " + last);
     }
 
     @Override
@@ -114,28 +124,37 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
         super.onResume();
         EventBus.getDefault().register(this);
         //get comment
-        chatRoomViewModel.getChatRoom(100, chatRoom).observe(this, qiscusComments -> {
+        chatRoomViewModel.getChatRoom(100).observe(this, qiscusComments -> {
             if (qiscusComments != null){
                 commentsAdapter.addOrUpdate(qiscusComments);
                 notifyLatestRead();
             }
         });
-        QiscusCacheManager.getInstance().setLastChatActivity(true, chatRoom.getId());
+
+        //check typing
         checkTyping();
         Runnable stopTypingNotifyTask = () -> {
             notifyServerTyping(false);
         };
+
+        //getOpponentIfNotGroupEmail
+        chatRoomViewModel.getOpponentIfNotGroupEmail().observe(this,opponentEmail -> {
+            if (opponentEmail != null){
+                this.opponentEmail = opponentEmail;
+                listenUser();
+            }
+        });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        QiscusCacheManager.getInstance().setLastChatActivity(false, chatRoom.getId());
         EventBus.getDefault().unregister(this);
     }
 
     @Override
     protected void onDestroy() {
+        unlistenUser();
         super.onDestroy();
         notifyLatestRead();
         chatRoomViewModel.detachView();
@@ -149,13 +168,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ChatRoomViewM
     @Override
     public void onFailedSendComment(QiscusComment qiscusComment) {
         commentsAdapter.addOrUpdate(qiscusComment);
-    }
-
-    @Subscribe
-    public void onUserStatusChanged(QiscusUserStatusEvent event) {
-        String last = QiscusDateUtil.getRelativeTimeDiff(event.getLastActive());
-        Log.w("test","onUserStatusChanged: "+ event.isOnline());
-        binding.subtitle.setText(event.isOnline() ? "Online" : "Last seen " + last);
     }
 
     @Override

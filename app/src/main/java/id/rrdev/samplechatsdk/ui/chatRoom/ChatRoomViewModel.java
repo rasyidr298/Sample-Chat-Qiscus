@@ -43,6 +43,8 @@ public class ChatRoomViewModel extends ViewModel implements QiscusChatRoomEventH
         roomEventHandler = new QiscusChatRoomEventHandler(this.room, this);
     }
 
+
+    //create comment
     public LiveData<QiscusComment> sendComment(String content) {
         QiscusComment qiscusComment = QiscusComment.generateMessage(room.getId(), content);
         return chatRepository.sendComment(
@@ -53,10 +55,11 @@ public class ChatRoomViewModel extends ViewModel implements QiscusChatRoomEventH
                 });
     }
 
-    public LiveData<List<QiscusComment>> getChatRoom(int count, QiscusChatRoom room){
+    //get chat user
+    public LiveData<List<QiscusComment>> getChatRoom(int count){
         return chatRepository.loadComments(
                 count,
-                room,
+                this.room,
                 roomFromComment -> {
                     this.room = roomFromComment;
                     roomEventHandler.setChatRoom(roomFromComment);
@@ -64,6 +67,11 @@ public class ChatRoomViewModel extends ViewModel implements QiscusChatRoomEventH
                 throwable -> {
                     view.showErrorMessage(throwable.getMessage());
                 });
+    }
+
+    //getOpponentIfNotGroupEmail
+    public LiveData<String> getOpponentIfNotGroupEmail(){
+        return chatRepository.getOpponentIfNotGroupEmail(room);
     }
 
     @Subscribe

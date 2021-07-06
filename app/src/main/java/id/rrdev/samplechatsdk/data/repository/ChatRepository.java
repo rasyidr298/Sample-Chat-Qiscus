@@ -4,20 +4,18 @@ import android.util.Log;
 
 import androidx.core.util.Pair;
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.qiscus.sdk.chat.core.QiscusCore;
 import com.qiscus.sdk.chat.core.data.model.QiscusChatRoom;
 import com.qiscus.sdk.chat.core.data.model.QiscusComment;
+import com.qiscus.sdk.chat.core.data.model.QiscusRoomMember;
 import com.qiscus.sdk.chat.core.data.remote.QiscusApi;
 
 import org.json.JSONException;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import id.rrdev.samplechatsdk.data.model.User;
 import id.rrdev.samplechatsdk.util.Action;
@@ -136,6 +134,21 @@ public class ChatRepository{
                     Log.d(TAG,"chat user throw : "+throwable.getMessage());
                 });
 
+        return data;
+    }
+
+    //getOpponentIfNotGroupEmail
+    public LiveData<String> getOpponentIfNotGroupEmail(QiscusChatRoom room){
+        MutableLiveData<String> data = new MutableLiveData<>();
+
+        if (!room.isGroup()){
+            data.setValue(Observable.from(room.getMember())
+                    .map(QiscusRoomMember::getEmail)
+                    .filter(email -> !email.equals(QiscusCore.getQiscusAccount().getEmail()))
+                    .first()
+                    .toBlocking()
+                    .single());
+        }
         return data;
     }
 
